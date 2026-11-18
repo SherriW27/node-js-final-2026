@@ -23,6 +23,9 @@ app.get('/healthcheck', async (req, res) => {
 app.use('/api/coaches/skill', require('./routes/skill'))
 app.use('/api/credit-package', require('./routes/creditPackage'))
 
+// M2：會員系統
+app.use('/api/users', require('./routes/users'))
+
 // 沒有任何路由接得到的請求：回 404 failed
 app.use((req, res) => {
   res.status(404).json({ status: 'failed', message: '無此路由' })
