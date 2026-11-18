@@ -31,6 +31,11 @@ app.use('/api/users', require('./routes/users'))
 app.use('/api/admin/coaches/courses', require('./routes/adminCourses'))
 app.use('/api/admin/coaches', require('./routes/adminCoaches'))
 
+// M4：公開瀏覽。⚠️ /api/coaches 要掛在 /api/coaches/skill（上面 M1）之後，
+// 否則 GET /api/coaches/skill 會被 /api/coaches/:coachId 吃掉（coachId = "skill"）
+app.use('/api/coaches', require('./routes/coaches'))
+app.use('/api/courses', require('./routes/courses'))
+
 // 沒有任何路由接得到的請求：回 404 failed
 app.use((req, res) => {
   res.status(404).json({ status: 'failed', message: '無此路由' })
