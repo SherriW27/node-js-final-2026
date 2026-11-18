@@ -29,6 +29,7 @@ app.use('/api/users', require('./routes/users'))
 // M3：教練後台。⚠️ courses 要掛在 coaches 前面，
 // 否則 POST /api/admin/coaches/courses 會被 POST /api/admin/coaches/:userId 吃掉（userId = "courses"）
 app.use('/api/admin/coaches/courses', require('./routes/adminCourses'))
+app.use('/api/admin/coaches/revenue', require('./routes/adminRevenue')) // M6：月營收
 app.use('/api/admin/coaches', require('./routes/adminCoaches'))
 
 // M4：公開瀏覽。⚠️ /api/coaches 要掛在 /api/coaches/skill（上面 M1）之後，
