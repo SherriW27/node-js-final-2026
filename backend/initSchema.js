@@ -2,6 +2,19 @@
 const pool = require('./db')
 
 async function initSchema() {
+  // M2：會員。password 存 bcrypt 雜湊，不存明文；role 只能是 USER 或 COACH
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      name varchar(50) NOT NULL,
+      email varchar(320) NOT NULL UNIQUE,
+      password varchar(72) NOT NULL,
+      role varchar(10) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'COACH')),
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    )
+  `)
+
   // M1：技能。name 加 UNIQUE，由資料庫保證名稱不重複
   await pool.query(`
     CREATE TABLE IF NOT EXISTS skill (
