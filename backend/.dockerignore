@@ -1,0 +1,16 @@
+# 機密：絕對不能被打包進映像檔（容器的環境變數由 docker-compose.yml 提供）
+.env
+.env.*
+!.env.example
+
+# 依賴：在容器裡用 npm ci 重新安裝。Mac 裝的套件與容器裡的 Linux 不相容，拷貝進去反而會出問題
+node_modules
+
+# 與執行無關的東西：排除它們可以讓 build context 變小、建置更快
+.git
+.gitignore
+.DS_Store
+*.log
+npm-debug.log*
+Dockerfile
+.dockerignore
