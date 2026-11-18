@@ -72,6 +72,34 @@ async function initSchema() {
       updated_at timestamptz NOT NULL DEFAULT now()
     )
   `)
+  // M5：購買紀錄。name、堂數、金額是「購買當下的快照」：方案之後被改價或刪除，紀錄不受影響
+  // 方案被刪時 credit_package_id 變 NULL（SET NULL），但這筆購買紀錄要留著
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS credit_purchase (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+      credit_package_id uuid REFERENCES credit_package (id) ON DELETE SET NULL,
+      name varchar(50) NOT NULL,
+      purchased_credits integer NOT NULL CHECK (purchased_credits >= 0),
+      price_paid integer NOT NULL CHECK (price_paid >= 0),
+      purchase_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_credit_purchase_user ON credit_purchase (user_id)')
+
+  // M5：報名紀錄。取消是「軟刪除」：只標 cancelled_at，紀錄保留
+  // UNIQUE (user_id, course_id)：同一人對同一堂課只能有一筆（含已取消的），所以取消過的課不能再報名
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course_booking (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+      course_id uuid NOT NULL REFERENCES course (id) ON DELETE CASCADE,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      cancelled_at timestamptz,
+      UNIQUE (user_id, course_id)
+    )
+  `)
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_course_booking_course ON course_booking (course_id)')
 }
 
 module.exports = initSchema

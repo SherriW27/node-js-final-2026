@@ -91,7 +91,7 @@ router.post('/', auth, requireCoach, async (req, res) => {
 // GET /api/admin/coaches/courses：教練本人開的全部課程
 router.get('/', auth, requireCoach, async (req, res) => {
   // status 不存進資料表，每次用「現在時間」與起迄時間比較即時算出
-  // TODO(M5)：participants 目前固定 0，等報名資料表做好後，改成「未取消的報名數」
+  // participants 是「未取消」的報名數（已取消的不計），同樣是即時計算
   const { rows } = await pool.query(
     `SELECT c.id, c.name, c.start_at, c.end_at, c.max_participants, c.meeting_url,
             CASE
@@ -99,7 +99,8 @@ router.get('/', auth, requireCoach, async (req, res) => {
               WHEN now() <= c.end_at THEN '進行中'
               ELSE '已結束'
             END AS status,
-            0 AS participants
+            (SELECT COUNT(*)::int FROM course_booking b
+              WHERE b.course_id = c.id AND b.cancelled_at IS NULL) AS participants
        FROM course c
       WHERE c.user_id = $1
       ORDER BY c.start_at DESC`,

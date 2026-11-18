@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const pool = require('../db')
 const auth = require('../middlewares/auth')
+const { getCreditSummary } = require('../credits')
 const {
   fail,
   success,
@@ -138,6 +139,36 @@ router.put('/password', auth, async (req, res) => {
     req.user.id
   ])
   success(res, null)
+})
+
+// GET /api/users/credit-package：本人的購買紀錄（新到舊，data 直接是陣列）
+router.get('/credit-package', auth, async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT name, purchased_credits, price_paid, purchase_at
+       FROM credit_purchase
+      WHERE user_id = $1
+      ORDER BY purchase_at DESC, id`,
+    [req.user.id]
+  )
+  success(res, rows)
+})
+
+// GET /api/users/courses：本人的課表與剩餘堂數
+router.get('/courses', auth, async (req, res) => {
+  const { used, remain } = await getCreditSummary(pool, req.user.id)
+
+  // course_booking 包含「已取消」的報名（cancelled_at 有值），前端靠它顯示狀態，不能自己濾掉
+  const { rows } = await pool.query(
+    `SELECT c.id AS course_id, c.name, c.start_at, c.end_at, c.meeting_url,
+            u.name AS coach_name, b.cancelled_at
+       FROM course_booking b
+       JOIN course c ON c.id = b.course_id
+       JOIN users u ON u.id = c.user_id
+      WHERE b.user_id = $1
+      ORDER BY c.start_at ASC, c.id`,
+    [req.user.id]
+  )
+  success(res, { credit_remain: remain, credit_usage: used, course_booking: rows })
 })
 
 module.exports = router
