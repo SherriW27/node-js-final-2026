@@ -34,6 +34,44 @@ async function initSchema() {
       created_at timestamp NOT NULL DEFAULT now()
     )
   `)
+  // M3：教練資料。user_id UNIQUE：一個人只能有一筆教練資料；使用者被刪時一併刪除
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS coach (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL UNIQUE REFERENCES users (id) ON DELETE CASCADE,
+      experience_years integer NOT NULL CHECK (experience_years >= 0),
+      description text NOT NULL,
+      profile_image_url text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
+
+  // M3：教練與技能的多對多關聯表。複合主鍵避免同一技能綁兩次；兩邊被刪時關聯一併消失
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS coach_link_skill (
+      coach_id uuid NOT NULL REFERENCES coach (id) ON DELETE CASCADE,
+      skill_id uuid NOT NULL REFERENCES skill (id) ON DELETE CASCADE,
+      PRIMARY KEY (coach_id, skill_id)
+    )
+  `)
+
+  // M3：課程。user_id 是開課教練的「使用者 id」；技能被課程使用時不能刪（預設 RESTRICT）
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS course (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+      skill_id uuid NOT NULL REFERENCES skill (id),
+      name varchar(100) NOT NULL,
+      description text NOT NULL,
+      start_at timestamptz NOT NULL,
+      end_at timestamptz NOT NULL,
+      max_participants integer NOT NULL CHECK (max_participants >= 0),
+      meeting_url text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
 }
 
 module.exports = initSchema

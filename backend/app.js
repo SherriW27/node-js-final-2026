@@ -26,6 +26,11 @@ app.use('/api/credit-package', require('./routes/creditPackage'))
 // M2：會員系統
 app.use('/api/users', require('./routes/users'))
 
+// M3：教練後台。⚠️ courses 要掛在 coaches 前面，
+// 否則 POST /api/admin/coaches/courses 會被 POST /api/admin/coaches/:userId 吃掉（userId = "courses"）
+app.use('/api/admin/coaches/courses', require('./routes/adminCourses'))
+app.use('/api/admin/coaches', require('./routes/adminCoaches'))
+
 // 沒有任何路由接得到的請求：回 404 failed
 app.use((req, res) => {
   res.status(404).json({ status: 'failed', message: '無此路由' })

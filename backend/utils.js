@@ -21,6 +21,20 @@ const isValidPassword = (value) => typeof value === 'string' && PASSWORD_REGEX.t
 // 必填的字串欄位：必須是字串，且去掉前後空白後不是空的
 const isFilledString = (value) => typeof value === 'string' && value.trim() !== ''
 
+// 0 以上的整數，且必須是 number 型別（字串 "10" 不算）
+const isNonNegativeInt = (value) => Number.isInteger(value) && value >= 0
+
+// 網址必須以 https:// 開頭
+const isHttpsUrl = (value) => typeof value === 'string' && /^https:\/\/\S+$/i.test(value)
+
+// UTC ISO 8601 時間字串，例如 2026-08-20T10:00:00Z（也接受 +08:00 這種帶時區的寫法）
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/
+const isIsoDateString = (value) =>
+  typeof value === 'string' && ISO_DATE_REGEX.test(value) && !Number.isNaN(Date.parse(value))
+
+// PostgreSQL 外鍵檢查失敗（例如 skill_id 指向不存在的技能，或要刪除被使用中的資料）
+const isForeignKeyViolation = (err) => err && err.code === '23503'
+
 const PASSWORD_RULE_MESSAGE = '密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字'
 
 module.exports = {
@@ -30,5 +44,9 @@ module.exports = {
   isUniqueViolation,
   isValidPassword,
   isFilledString,
+  isNonNegativeInt,
+  isHttpsUrl,
+  isIsoDateString,
+  isForeignKeyViolation,
   PASSWORD_RULE_MESSAGE
 }

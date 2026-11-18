@@ -1,7 +1,7 @@
 // M1：技能管理（全部 public，不需登入）
 const express = require('express')
 const pool = require('../db')
-const { isUuid, fail, success, isUniqueViolation } = require('../utils')
+const { isUuid, fail, success, isUniqueViolation, isForeignKeyViolation } = require('../utils')
 
 const router = express.Router()
 
@@ -39,11 +39,19 @@ router.delete('/:skillId', async (req, res) => {
     return fail(res, 400, 'ID錯誤')
   }
 
-  const result = await pool.query('DELETE FROM skill WHERE id = $1', [skillId])
-  if (result.rowCount === 0) {
-    return fail(res, 400, 'ID錯誤')
+  try {
+    const result = await pool.query('DELETE FROM skill WHERE id = $1', [skillId])
+    if (result.rowCount === 0) {
+      return fail(res, 400, 'ID錯誤')
+    }
+    success(res, { raw: [], affected: result.rowCount })
+  } catch (err) {
+    // 技能已被課程使用，資料庫的外鍵限制不讓刪：回清楚的 409，不要變成 500
+    if (isForeignKeyViolation(err)) {
+      return fail(res, 409, '此技能已被課程使用，無法刪除')
+    }
+    throw err
   }
-  success(res, { raw: [], affected: result.rowCount })
 })
 
 module.exports = router

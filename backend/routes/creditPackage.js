@@ -1,12 +1,9 @@
 // M1：購買方案管理（全部 public，不需登入）
 const express = require('express')
 const pool = require('../db')
-const { isUuid, fail, success, isUniqueViolation } = require('../utils')
+const { isUuid, fail, success, isUniqueViolation, isNonNegativeInt } = require('../utils')
 
 const router = express.Router()
-
-// 0 以上的整數，且必須是 number 型別（字串 "1400" 不算）
-const isNonNegativeInt = (value) => Number.isInteger(value) && value >= 0
 
 // GET /api/credit-package：取得方案列表
 router.get('/', async (req, res) => {
