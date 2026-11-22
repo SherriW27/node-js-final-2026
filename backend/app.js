@@ -1,7 +1,14 @@
 // Express 應用程式：middleware 與路由
 const express = require('express')
 const cors = require('cors')
-const pool = require('./db')
+const dataSource = require('./db/data-source')
+const { AppError, fail } = require('./utils')
+
+// 分層架構（MVC 的變形，回應是 JSON，沒有 View 樣板）：
+//   routes/       只負責「哪個網址、經過哪些 middleware、交給哪個 controller」
+//   controllers/  讀 req（params / query / body）、驗證欄位、呼叫 service、用 success() 回應
+//   services/     商業邏輯與資料庫存取（TypeORM），不碰 req / res
+//   entities/     資料模型（Model）
 
 const app = express()
 
@@ -11,7 +18,7 @@ app.use(express.json())
 // M0：服務健康檢查，資料庫可連線才回 200 純文字 OK
 app.get('/healthcheck', async (req, res) => {
   try {
-    await pool.query('SELECT 1')
+    await dataSource.query('SELECT 1')
     res.status(200).type('text/plain').send('OK')
   } catch (err) {
     res.status(503).type('text/plain').send('Service Unavailable')
@@ -42,8 +49,13 @@ app.use((req, res) => {
   res.status(404).json({ status: 'failed', message: '無此路由' })
 })
 
-// 全域錯誤處理：未預期的錯誤回 500，不把內部錯誤細節洩漏給前端
+// 全域錯誤處理：
+// - AppError：controller / service 主動丟出的預期錯誤，照它帶的狀態碼與訊息回
+// - 其他錯誤：未預期的錯誤回 500，不把內部錯誤細節洩漏給前端
 app.use((err, req, res, next) => {
+  if (err instanceof AppError) {
+    return fail(res, err.statusCode, err.message)
+  }
   console.error(err)
   res.status(500).json({ status: 'failed', message: '伺服器錯誤' })
 })

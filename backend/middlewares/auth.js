@@ -1,6 +1,7 @@
 // 驗證登入：檢查 Authorization: Bearer <token>，通過後把使用者放進 req.user
 const jwt = require('jsonwebtoken')
-const pool = require('../db')
+const dataSource = require('../db/data-source')
+const User = require('../entities/User')
 const { fail, isUuid } = require('../utils')
 
 async function auth(req, res, next) {
@@ -24,14 +25,16 @@ async function auth(req, res, next) {
   if (!isUuid(payload.id)) {
     return fail(res, 401, '無效的 token')
   }
-  const { rows } = await pool.query('SELECT id, name, email, password, role FROM users WHERE id = $1', [
-    payload.id
-  ])
-  if (rows.length === 0) {
+  // password 在 entity 設了 select: false，修改密碼要比對舊密碼，所以這裡明確選出來
+  const user = await dataSource.getRepository(User).findOne({
+    where: { id: payload.id },
+    select: { id: true, name: true, email: true, password: true, role: true }
+  })
+  if (!user) {
     return fail(res, 401, '無效的 token')
   }
 
-  req.user = rows[0]
+  req.user = user
   next()
 }
 
